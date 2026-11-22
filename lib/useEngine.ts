@@ -8,6 +8,8 @@ import { PriceHub } from "./feeds";
 import { Market, OrderBook, fetchMarket, fetchOpenMarkets, fetchOrderBook, pickCurrent, upMid } from "./kalshi";
 import { blendedVolPerMin, isFastMove, modelProbUp } from "./model";
 import { gradeLogs } from "./scorecard";
+import { featuresFor, fitLogistic, predictLogistic } from "./blend";
+import { BlendState, blendCoef, isProven, loadLiveBlend, saveLiveBlend, entryZone } from "./entry";
 import { Settings, readLS, writeLS } from "./storage";
 import {
   SETTLE_FIRST_OFFSET_S,
@@ -17,6 +19,20 @@ import {
   saveTrack,
   trackStats,
 } from "./tracking";
+
+export interface OddsPoint {
+  t: number;
+  kalshi: number | null; // Up mid, cents
+  fair: number | null; // decision fair Up, cents
+}
+
+export interface Signal {
+  side: "up" | "down" | null;
+  edge: number | null;
+  ready: boolean; // every gate passed
+  blockers: string[];
+  heldSec: number;
+}
 
 export interface FeedView {
   id: string;
@@ -59,6 +75,9 @@ export function useEngine(settings: Settings) {
   const [track, setTrack] = useState<TrackEntry[]>([]);
   const trackRef = useRef<TrackEntry[]>([]);
   const seenWindows = useRef(new Map<string, number>()); // ticker -> closeTime
+  const odds = useRef<{ ticker: string; pts: OddsPoint[] }>({ ticker: "", pts: [] });
+  const streak = useRef<{ side: "up" | "down" | null; since: number }>({ side: null, since: 0 });
+  const [liveBlend, setLiveBlend] = useState<BlendState | null>(null);
   const latest = useRef<{ entry: Parameters<typeof addLog>[0] | null }>({ entry: null });
 
   // Price feeds
@@ -68,6 +87,7 @@ export function useEngine(settings: Settings) {
     const unsub = hub.subscribe(() => setTick((t) => t + 1));
     hub.start();
     setCalib(readLS(CALIB_KEY, DEFAULT_CALIB));
+    setLiveBlend(loadLiveBlend());
     trackRef.current = loadTrack();
     setTrack(trackRef.current);
     return () => {
@@ -190,9 +210,32 @@ export function useEngine(settings: Settings) {
       );
       setCalib(state);
       writeLS(CALIB_KEY, state);
+      // Re-fit the blend for the entry zone from this device's own graded readings, shrunk toward the
+      // backtest coefficients. Needs 300+ graded readings in the zone.
+      const zone = entryZone(settings.entryMinute);
+      const zoneRows = graded.filter((g) => {
+        const mi = 15 - g.minsLeft;
+        return mi >= zone.from && mi <= zone.to && g.kalshiMid !== null && g.pModel !== undefined;
+      });
+      if (zoneRows.length >= 300) {
+        const prior = blendCoef(settings.entryMinute, null);
+        if (prior) {
+          const coef = fitLogistic(
+            zoneRows.map((g) => ({
+              ...featuresFor(g.pModel as number, (g.kalshiMid as number) / 100, g.mom1 ?? 0, g.mom5 ?? 0),
+              y: g.y,
+            })),
+            30,
+            prior,
+          );
+          const lb: BlendState = { entryMinute: settings.entryMinute, coef, n: zoneRows.length, updatedAt: Date.now() };
+          saveLiveBlend(lb);
+          setLiveBlend(lb);
+        }
+      }
       setGradedVersion((v) => v + 1);
     } catch {}
-  }, []);
+  }, [settings.entryMinute]);
 
   useEffect(() => {
     void grade();
@@ -227,8 +270,19 @@ export function useEngine(settings: Settings) {
     price && target && volPerMin && minsLeft !== null
       ? modelProbUp({ price, target, volPerMin, minsLeft, calib: calib.calib, obsSum: settle?.sum, obsCount: settle?.count })
       : null;
-  const pUp = model && minsLeft !== null ? correctedP(model.pUp, minsLeft, calib) : null;
+  const pModel = model && minsLeft !== null ? correctedP(model.pUp, minsLeft, calib) : null;
   const price60 = hub?.priceAgo(60) ?? null;
+  const price300 = hub?.priceAgo(300) ?? null;
+  const minuteIn = market ? (now - market.openTime) / 60000 : null;
+  const mom1 = rawPrice && price60 && volPerMin ? Math.log(rawPrice / price60) / volPerMin : 0;
+  const mom5 = rawPrice && price300 && volPerMin ? Math.log(rawPrice / price300) / (volPerMin * Math.sqrt(5)) : 0;
+  const kMid = market ? upMid(market) : null;
+  // Learned blend of model + Kalshi price + momentum for this minute of the window (see lib/blend.ts).
+  const coef = minuteIn !== null && minuteIn >= 0.5 && minuteIn <= 14.5 ? blendCoef(minuteIn, liveBlend) : null;
+  const pBlend =
+    coef && pModel !== null && kMid !== null ? predictLogistic(coef, featuresFor(pModel, kMid / 100, mom1, mom5)) : null;
+  const pUp = settings.useBlend && pBlend !== null ? pBlend : pModel;
+  const proven = minuteIn !== null ? isProven(minuteIn) : { ok: false, reason: "no window" };
   const fast = rawPrice ? isFastMove(rawPrice, price60, volPerMin) : false;
 
   const sideView = (side: "up" | "down"): SideView => {
@@ -266,13 +320,16 @@ export function useEngine(settings: Settings) {
 
   // Latest loggable reading
   latest.current.entry =
-    market && model && pUp !== null && price && target && minsLeft !== null && minsLeft > 0 && volPerMin
+    market && model && pUp !== null && pModel !== null && price && target && minsLeft !== null && minsLeft > 0 && volPerMin
       ? {
           ts: now,
           ticker: market.ticker,
           closeTime: market.closeTime,
           minsLeft,
           pUp,
+          pModel: pModel ?? undefined,
+          mom1,
+          mom5,
           lnr: model.lnr,
           vol: volPerMin,
           tEff: model.tEff,
@@ -301,6 +358,43 @@ export function useEngine(settings: Settings) {
     }, 1000);
     return () => clearInterval(id);
   }, []);
+
+  // ---- trade signal with consistency gates ----
+  const best = [up, down]
+    .filter((s) => s.edgeBuy !== null)
+    .sort((a, b) => (b.edgeBuy as number) - (a.edgeBuy as number))[0];
+  const candidate = best && (best.edgeBuy as number) >= settings.margin ? best.side : null;
+  if (candidate !== streak.current.side) streak.current = { side: candidate, since: now };
+  const heldSec = candidate ? (now - streak.current.since) / 1000 : 0;
+  const blockers: string[] = [];
+  if (!candidate) blockers.push(`no side ≥ ${settings.margin}¢ edge after fees`);
+  else {
+    if (heldSec < settings.holdSec) blockers.push(`edge held ${Math.floor(heldSec)}s of ${settings.holdSec}s`);
+    if (fast) blockers.push("fast move");
+    if (settings.useBlend && !proven.ok) blockers.push(proven.reason);
+    const spread = market && market.yesBid !== null && market.yesAsk !== null ? market.yesAsk - market.yesBid : null;
+    if (spread === null || spread > settings.maxSpread) blockers.push(`Kalshi spread ${spread ?? "?"}¢ > ${settings.maxSpread}¢`);
+    const nEx = hub?.last?.used.length ?? 0;
+    if (!settings.lite && nEx < 5) blockers.push(`only ${nEx}/7 exchanges live`);
+    if (settings.useBlend && pBlend === null) blockers.push("no blend for this minute");
+  }
+  const signal: Signal = {
+    side: candidate,
+    edge: best?.edgeBuy ?? null,
+    ready: !!candidate && blockers.length === 0,
+    blockers,
+    heldSec,
+  };
+
+  if (market) {
+    if (odds.current.ticker !== market.ticker) odds.current = { ticker: market.ticker, pts: [] };
+    const pts = odds.current.pts;
+    const sec = Math.floor(now / 1000) * 1000;
+    if (!pts.length || pts[pts.length - 1].t !== sec) {
+      pts.push({ t: sec, kalshi: kMid, fair: pUp !== null ? pUp * 100 : null });
+      if (pts.length > 1000) pts.shift();
+    }
+  }
 
   const used = new Set(hub?.last?.used ?? []);
   const feeds: FeedView[] = (hub?.feedStates() ?? []).map((f) => ({
@@ -364,6 +458,16 @@ export function useEngine(settings: Settings) {
       grade,
       minuteCount: hub?.minuteCloses.length ?? 0,
       rawPrice,
+      pModel,
+      pBlend,
+      minuteIn,
+      proven,
+      signal,
+      oddsHistory: odds.current.pts,
+      history: hub?.history ?? [],
+      liveBlend,
+      mom1,
+      mom5,
       bias,
       tstats,
       rti: hub?.last ?? null,

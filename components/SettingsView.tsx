@@ -65,6 +65,36 @@ export default function SettingsView({ e, settings, update }: { e: Engine; setti
         </div>
         <div className="flex items-center justify-between">
           <div>
+            <div className="text-[15px]">Your entry minute</div>
+            <div className="text-[12px] text-ink3">Minutes into the 15-minute window you usually buy (zone = ±1 min)</div>
+          </div>
+          <Stepper value={settings.entryMinute} min={2} max={13} suffix="m" onChange={(v) => update({ entryMinute: v })} />
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[15px]">Edge must hold for</div>
+            <div className="text-[12px] text-ink3">Filters one-tick flickers before a BUY shows</div>
+          </div>
+          <Stepper value={settings.holdSec} min={0} max={60} suffix="s" onChange={(v) => update({ holdSec: v })} />
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[15px]">Max Kalshi spread</div>
+            <div className="text-[12px] text-ink3">Skip trades when the Up bid/ask is wider than this</div>
+          </div>
+          <Stepper value={settings.maxSpread} min={1} max={10} suffix="¢" onChange={(v) => update({ maxSpread: v })} />
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[15px]">Use learned blend</div>
+            <div className="text-[12px] text-ink3">
+              Decide with model + Kalshi price + momentum, weighted by what worked on past windows. Off = raw model only (unproven).
+            </div>
+          </div>
+          <Toggle on={settings.useBlend} onChange={(v) => update({ useBlend: v })} />
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
             <div className="text-[15px]">Contracts per order</div>
             <div className="text-[12px] text-ink3">Fee rounds up per order, so more contracts means less fee per contract</div>
           </div>

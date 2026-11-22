@@ -41,12 +41,8 @@ export default function Header({ e }: { e: Engine }) {
           <div className="text-[13px] text-ink2">{m ? windowLabel(m.openTime, m.closeTime) : e.marketErr ? "Kalshi unreachable" : "Waiting for window…"}</div>
           <div className="text-[11px] text-ink3">KXBTC15M</div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <div className="tnum mt-0.5 text-[26px] font-bold leading-tight">{usd(e.price)}</div>
-          <div className="text-[10px] uppercase tracking-wider text-ink3">BRTI replica</div>
-        </div>
-        <div className="tnum flex items-baseline gap-2 text-[13px]">
-          <span className="text-ink3">Target {usd(e.target)}</span>
+        <div className="tnum mt-1 flex items-baseline gap-2 text-[15px]">
+          <span className="text-ink2">Target {usd(e.target)}</span>
           {gap !== null ? (
             <span className={above ? "text-up font-semibold" : "text-down font-semibold"}>
               {above ? "▲" : "▼"} {signedUsd(gap)}

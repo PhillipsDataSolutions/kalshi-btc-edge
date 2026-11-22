@@ -42,6 +42,10 @@ export interface Settings {
   showBook: boolean;
   lite: boolean; // light price engine (top-of-book feeds) to save mobile data
   biasCorrect: boolean; // shift the replica by its measured offset vs official settlements
+  entryMinute: number; // minutes into the window you usually enter
+  useBlend: boolean; // decide with the learned model+Kalshi blend
+  holdSec: number; // edge must persist this long before a BUY shows
+  maxSpread: number; // max Kalshi Up bid/ask spread (cents) for a BUY
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -51,6 +55,10 @@ export const DEFAULT_SETTINGS: Settings = {
   showBook: true,
   lite: false,
   biasCorrect: true,
+  entryMinute: 8,
+  useBlend: true,
+  holdSec: 10,
+  maxSpread: 3,
 };
 
 export interface Position {

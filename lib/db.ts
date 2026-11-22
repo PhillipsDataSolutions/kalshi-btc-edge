@@ -6,7 +6,10 @@ export interface LogEntry {
   ticker: string;
   closeTime: number;
   minsLeft: number;
-  pUp: number; // displayed P(Up) at the time (calib + shrink applied)
+  pUp: number; // decision P(Up) at the time (blend if enabled, else calibrated model)
+  pModel?: number; // calibrated model alone
+  mom1?: number; // 1-minute momentum in σ units
+  mom5?: number; // 5-minute momentum in σ units
   // Ingredients so calibration can be re-fit later:
   lnr: number;
   vol: number;

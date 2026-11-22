@@ -9,6 +9,8 @@ import Hero from "./Hero";
 import Histogram from "./Histogram";
 import { CashOut, Depth, Stats } from "./LiveExtras";
 import Scorecard from "./Scorecard";
+import Ticker from "./Ticker";
+import EntryCard from "./EntryCard";
 import SettingsView from "./SettingsView";
 
 type Tab = "live" | "score" | "settings";
@@ -41,7 +43,8 @@ export default function App() {
             {e.marketErr && !e.market ? (
               <div className="rounded-xl border border-down/40 bg-down/10 p-3 text-[13px] text-down">Kalshi: {e.marketErr}. Retrying…</div>
             ) : null}
-            <Hero e={e} margin={settings.margin} />
+            <Hero e={e} entryMinute={settings.entryMinute} />
+            <Ticker e={e} entryMinute={settings.entryMinute} />
             <Histogram e={e} />
             <Stats e={e} />
             <CashOut e={e} pos={pos} setPos={setPos} margin={settings.margin} />
@@ -49,7 +52,10 @@ export default function App() {
             <Accuracy e={e} />
           </>
         ) : tab === "score" ? (
-          <Scorecard e={e} margin={settings.margin} contracts={settings.contracts} />
+          <>
+            <EntryCard entryMinute={settings.entryMinute} />
+            <Scorecard e={e} margin={settings.margin} contracts={settings.contracts} />
+          </>
         ) : (
           <SettingsView e={e} settings={settings} update={updateSettings} />
         )}

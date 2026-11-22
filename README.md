@@ -8,23 +8,66 @@ No trading. No Kalshi account or API keys.
 
 ## Deploy to Vercel
 
-This app lives in the `kalshi-btc-edge/` folder of the repo.
-
-1. In Vercel: **Add New → Project**, import this repository.
-2. Set **Root Directory** to `kalshi-btc-edge`. Leave everything else at its defaults (Next.js is detected automatically).
-3. Deploy. No environment variables are needed.
+1. In Vercel: **Add New → Project**, import this repository. Leave everything at its defaults (Next.js is detected
+   automatically). If the app sits in a subfolder of a bigger repo, set **Root Directory** to that folder.
+2. Deploy. No environment variables are needed.
 
 On iPhone: open the deployed URL in Safari → Share → **Add to Home Screen**.
 
 ## Run locally
 
 ```bash
-cd kalshi-btc-edge
 npm install
 npm run dev     # http://localhost:3000
-npm test        # model, fee, parsing, calibration and scorecard tests
+npm test        # BRTI, model, fee, parsing, calibration, blend and scorecard tests
+npm run learn   # re-learn from settled windows → lib/priors.json (commit + redeploy to ship it)
 npm run build
 ```
+
+## Built around your entry minute
+
+You enter about 8 minutes into each window (7 minutes left). The app is organised around that minute. Change it in
+Settings → Your entry minute.
+
+- **Before the entry zone** (minute 7), the top card counts down to entry and previews which side is leaning, and why
+  it would or wouldn't trade.
+- **In the entry zone** (minutes 7–9), it shows **BUY UP / BUY DOWN** only when every check passes. Otherwise it
+  shows **NO TRADE THIS WINDOW** and lists the reasons. The checks:
+  1. Edge after fees ≥ your margin (default 3¢).
+  2. The edge has held for 10 seconds, so one-tick flickers don't trigger.
+  3. No fast move (60-second move under 2σ).
+  4. Kalshi's Up spread is 3¢ or less.
+  5. At least 5 of the 7 exchanges are live.
+  6. **The backtest proved an edge at this minute.** On windows the fit never saw, the blend had to score better
+     than Kalshi's own price and make money after fees.
+- **After the entry zone**, it switches to managing the trade: use the cash-out check.
+
+Skipping windows without a measured edge is what makes the app consistent. It trades less, but only where it has
+evidence.
+
+## Learning: blend of model and Kalshi
+
+Kalshi's price is hard to beat on its own: it already reflects everyone's information. So the app doesn't pit its
+model against Kalshi. It learns how much to trust each, per minute into the window:
+
+```
+P(Up) = σ( w0 + w1·logit(P_model) + w2·logit(P_kalshi) + w3·mom1 + w4·mom5 )
+```
+
+`mom1` and `mom5` are the 1- and 5-minute moves in σ units. `npm run learn` rebuilds every settled window from the
+last 21 days (`--days N` for more). For each minute 1–14 it rebuilds what the app would have seen:
+
+- Kalshi's Up bid and ask from 1-minute candlesticks
+- the BTC price from Coinbase 1-minute closes, corrected by the Coinbase−BRTI gap measured against each window's target
+- volatility, the model probability and momentum
+
+It fits the weights by ridge-regularised logistic regression on the older 70% of windows and tests on the newest
+30%. Results are in `lib/priors.json`, and the Scorecard tab shows them as "Backtest by entry minute".
+
+- If the model adds nothing, `w1 → 0` and the decision collapses to Kalshi's price, so no edges are flagged.
+- On the phone, once it has 300+ graded readings in your entry zone, the app re-fits the weights from your own data.
+  The re-fit is shrunk toward the backtest weights.
+- Re-run `npm run learn` every week or two and redeploy, so the weights follow the market.
 
 ## How it works
 
@@ -116,6 +159,10 @@ calls are then suppressed.
     odds toward 50%.
 
 ## Limits to know
+
+- Nothing here guarantees a profit. The backtest is honest (out-of-sample, fees included, one trade per window), but
+  markets change. Watch the live Scorecard: if the edge disappears there, stop.
+- The backtest assumes you fill at the 1-minute closing ask. Real fills at a busy moment can be worse.
 
 - The replica uses the same exchanges and formula as BRTI, but CF Benchmarks sees the books from its own servers, every 200ms and with no network lag. Small differences remain; the accuracy card measures them.
 - iOS suspends home-screen apps in the background. Readings are only logged while the app is on screen. Feeds reconnect
