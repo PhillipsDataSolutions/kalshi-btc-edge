@@ -282,7 +282,7 @@ export function useEngine(settings: Settings) {
   const pBlend =
     coef && pModel !== null && kMid !== null ? predictLogistic(coef, featuresFor(pModel, kMid / 100, mom1, mom5)) : null;
   const pUp = settings.useBlend && pBlend !== null ? pBlend : pModel;
-  const proven = minuteIn !== null ? isProven(minuteIn) : { ok: false, reason: "no window" };
+  const proven = isProven(settings.entryMinute);
   const fast = rawPrice ? isFastMove(rawPrice, price60, volPerMin) : false;
 
   const sideView = (side: "up" | "down"): SideView => {

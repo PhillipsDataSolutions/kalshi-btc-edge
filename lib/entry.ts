@@ -12,8 +12,23 @@ export interface OosRow {
   brierModel: number;
   brierKalshi: number;
   brierBlend: number;
-  pnlModel: { trades: number; wins: number; pnl: number; perTrade: number };
-  pnlBlend: { trades: number; wins: number; pnl: number; perTrade: number };
+  pnlModel: PnlSummary;
+  pnlBlend: PnlSummary;
+}
+
+export interface PnlSummary {
+  trades: number;
+  wins: number;
+  pnl: number; // cents
+  perTrade: number; // cents
+  t?: number; // mean / standard error
+}
+
+export interface ZoneRow extends PnlSummary {
+  center: number;
+  from: number;
+  to: number;
+  testWindows: number;
 }
 
 export interface Priors {
@@ -24,6 +39,7 @@ export interface Priors {
   margin: number;
   coef: Record<string, number[]>;
   outOfSample: OosRow[];
+  zones?: ZoneRow[];
 }
 
 export const PRIORS = priors as unknown as Priors;
@@ -65,15 +81,31 @@ export function oosRow(minuteIn: number): OosRow | null {
   return PRIORS.outOfSample?.find((r) => r.minute === m) ?? null;
 }
 
+export const MIN_ZONE_TRADES = 30;
+export const MIN_ZONE_T = 2;
+
+export function zoneRow(entryMinute: number): ZoneRow | null {
+  return PRIORS.zones?.find((z) => z.center === entryMinute) ?? null;
+}
+
 /**
- * "Proven" = on windows the fit never saw, the blend had a lower Brier score than Kalshi's own price
- * AND its one-trade-per-window strategy made money after fees.
+ * "Proven" for an entry zone = on windows the fit never saw, trading the first qualifying minute of the
+ * zone made money after fees over at least 30 trades with t ≥ 2 (unlikely to be luck), and the blend
+ * scored better than Kalshi's own price at the zone's centre minute.
  */
-export function isProven(minuteIn: number): { ok: boolean; reason: string } {
-  const r = oosRow(minuteIn);
-  if (!r) return { ok: false, reason: "no backtest for this minute" };
+export function isProven(entryMinute: number): { ok: boolean; reason: string } {
+  const z = zoneRow(entryMinute);
+  const r = oosRow(entryMinute);
+  if (!z || !r) return { ok: false, reason: "no backtest for this entry zone" };
+  if (z.trades < MIN_ZONE_TRADES) return { ok: false, reason: `only ${z.trades} test trades in min ${z.from}–${z.to}` };
+  if (z.pnl <= 0) return { ok: false, reason: `min ${z.from}–${z.to} lost money in testing` };
+  if ((z.t ?? 0) < MIN_ZONE_T) return { ok: false, reason: `min ${z.from}–${z.to} profit not significant (t=${z.t})` };
   if (r.brierBlend >= r.brierKalshi) return { ok: false, reason: `Kalshi priced minute ${r.minute} better in testing` };
-  if (r.pnlBlend.trades < 20) return { ok: false, reason: `too few test trades at minute ${r.minute}` };
-  if (r.pnlBlend.pnl <= 0) return { ok: false, reason: `minute ${r.minute} lost money in testing` };
   return { ok: true, reason: "" };
+}
+
+/** Best backtested entry zone by t-statistic among profitable zones with enough trades. */
+export function bestZone(): ZoneRow | null {
+  const z = (PRIORS.zones ?? []).filter((x) => x.trades >= MIN_ZONE_TRADES && x.pnl > 0);
+  return z.sort((a, b) => (b.t ?? 0) - (a.t ?? 0))[0] ?? null;
 }

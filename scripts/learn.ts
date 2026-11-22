@@ -26,7 +26,10 @@ mkdirSync(CACHE, { recursive: true });
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+let netCalls = 0;
+
 async function getJson(url: string, tries = 6): Promise<any> {
+  netCalls++;
   for (let i = 0; i < tries; i++) {
     try {
       const r = await fetch(url, { headers: { accept: "application/json" } });
@@ -138,25 +141,42 @@ interface Sample extends BlendFeatures {
 
 const brier = (ps: number[], ys: number[]) => ps.reduce((s, p, i) => s + (p - ys[i]) ** 2, 0) / Math.max(1, ps.length);
 
+/** Trade result (cents) if the edge clears the margin, else null. */
+function tradeResult(s: Sample, p: number, margin: number): number | null {
+  const upCost = s.ask + takerFeeCents(s.ask);
+  const noAsk = 100 - s.bid;
+  const downCost = noAsk + takerFeeCents(noAsk);
+  const eu = 100 * p - upCost;
+  const ed = 100 * (1 - p) - downCost;
+  if (Math.max(eu, ed) < margin) return null;
+  const up = eu >= ed;
+  const win = up ? s.y === 1 : s.y === 0;
+  return (win ? 100 : 0) - (up ? upCost : downCost);
+}
+
+/** P/L summary with a t-statistic (mean per trade / standard error) so luck can be told from edge. */
+function summarize(results: number[]) {
+  const n = results.length;
+  const total = results.reduce((a, b) => a + b, 0);
+  const mean = n ? total / n : 0;
+  const sd = n > 1 ? Math.sqrt(results.reduce((a, r) => a + (r - mean) ** 2, 0) / (n - 1)) : 0;
+  const t = n > 1 && sd > 0 ? mean / (sd / Math.sqrt(n)) : 0;
+  return {
+    trades: n,
+    wins: results.filter((r) => r > 0).length,
+    pnl: Math.round(total * 10) / 10,
+    perTrade: Math.round(mean * 10) / 10,
+    t: Math.round(t * 100) / 100,
+  };
+}
+
 function pnl(samples: Sample[], probs: number[], margin: number) {
-  let trades = 0;
-  let wins = 0;
-  let total = 0;
+  const res: number[] = [];
   samples.forEach((s, i) => {
-    const p = probs[i];
-    const upCost = s.ask + takerFeeCents(s.ask);
-    const noAsk = 100 - s.bid;
-    const downCost = noAsk + takerFeeCents(noAsk);
-    const eu = 100 * p - upCost;
-    const ed = 100 * (1 - p) - downCost;
-    if (Math.max(eu, ed) < margin) return;
-    trades++;
-    const up = eu >= ed;
-    const win = up ? s.y === 1 : s.y === 0;
-    if (win) wins++;
-    total += (win ? 100 : 0) - (up ? upCost : downCost);
+    const r = tradeResult(s, probs[i], margin);
+    if (r !== null) res.push(r);
   });
-  return { trades, wins, pnl: Math.round(total * 10) / 10, perTrade: trades ? Math.round((total / trades) * 10) / 10 : 0 };
+  return summarize(res);
 }
 
 async function main() {
@@ -165,11 +185,12 @@ async function main() {
   console.log(`${markets.length} windows. Fetching Kalshi 1-minute quotes…`);
   const quotes = new Map<string, Record<number, { bid: number | null; ask: number | null }>>();
   for (let i = 0; i < markets.length; i += 6) {
+    const before = netCalls;
     const batch = markets.slice(i, i + 6);
     const res = await Promise.all(batch.map((m) => kalshiMinutes(m).catch(() => ({}))));
     batch.forEach((m, j) => quotes.set(m.ticker, res[j]));
     if (i % 120 === 0) process.stdout.write(`  ${i}/${markets.length}\r`);
-    await sleep(350);
+    if (netCalls > before) await sleep(350);
   }
   console.log("\nFetching Coinbase 1-minute candles…");
   const cb = await coinbase(markets[0].open - 1500 * 60, markets[markets.length - 1].close + 60);
@@ -218,6 +239,7 @@ async function main() {
   const cut = new Set(tickers.slice(0, Math.floor(tickers.length * 0.7)));
   const perMinute: any[] = [];
   const coef: Record<number, number[]> = {};
+  const testPred = new Map<string, Map<number, { s: Sample; p: number }>>(); // ticker -> minute -> prediction
   for (let minute = 1; minute <= 14; minute++) {
     const all = samples.filter((s) => s.minute === minute);
     const train = all.filter((s) => cut.has(s.ticker));
@@ -225,6 +247,10 @@ async function main() {
     if (train.length < 100 || test.length < 30) continue;
     const w = fitLogistic(train, 1.0);
     const pb = test.map((s) => predictLogistic(w, s));
+    test.forEach((s, i) => {
+      if (!testPred.has(s.ticker)) testPred.set(s.ticker, new Map());
+      testPred.get(s.ticker)!.set(minute, { s, p: pb[i] });
+    });
     const ys = test.map((s) => s.y);
     const row = {
       minute,
@@ -242,12 +268,36 @@ async function main() {
     coef[minute] = fitLogistic(all, 1.0); // final coefficients use every window
   }
 
+  // Entry zones: trade the FIRST minute in [c−1, c+1] whose edge clears the margin (how the app trades).
+  const zones: any[] = [];
+  for (let c = 2; c <= 13; c++) {
+    const res: number[] = [];
+    for (const [, byMin] of testPred) {
+      for (let mi = c - 1; mi <= c + 1; mi++) {
+        const e = byMin.get(mi);
+        if (!e) continue;
+        const r = tradeResult(e.s, e.p, MARGIN);
+        if (r !== null) {
+          res.push(r);
+          break;
+        }
+      }
+    }
+    zones.push({ center: c, from: c - 1, to: c + 1, testWindows: testPred.size, ...summarize(res) });
+  }
+
   const fmt = (x: number) => x.toFixed(4);
   console.log("\nOut-of-sample (newest 30% of windows), one reading per window per minute:");
   console.log("min-in  left  Brier model  Kalshi   blend    | blend P/L (1 contract, fees)");
   for (const r of perMinute) {
     console.log(
-      `  ${String(r.minute).padStart(2)}    ${String(r.minsLeft).padStart(2)}    ${fmt(r.brierModel)}   ${fmt(r.brierKalshi)}  ${fmt(r.brierBlend)}  | ${r.pnlBlend.trades} trades, ${r.pnlBlend.wins} won, ${(r.pnlBlend.pnl / 100).toFixed(2)} $, ${r.pnlBlend.perTrade}¢/trade`,
+      `  ${String(r.minute).padStart(2)}    ${String(r.minsLeft).padStart(2)}    ${fmt(r.brierModel)}   ${fmt(r.brierKalshi)}  ${fmt(r.brierBlend)}  | ${r.pnlBlend.trades} trades, ${r.pnlBlend.wins} won, ${(r.pnlBlend.pnl / 100).toFixed(2)} $, ${r.pnlBlend.perTrade}¢/trade, t=${r.pnlBlend.t}`,
+    );
+  }
+  console.log("\nEntry zones (first qualifying minute in the zone, one trade per window max):");
+  for (const z of zones) {
+    console.log(
+      `  min ${String(z.from).padStart(2)}–${String(z.to).padEnd(2)}  ${z.trades} trades / ${z.testWindows} windows, ${z.wins} won, ${(z.pnl / 100).toFixed(2)} $, ${z.perTrade}¢/trade, t=${z.t}`,
     );
   }
 
@@ -260,6 +310,7 @@ async function main() {
     note: "Coefficients for P(Up) = sigmoid(w · [1, logit(pModel), logit(pKalshi), mom1, mom5]) per minute into the window.",
     coef,
     outOfSample: perMinute.map(({ coef: _c, ...r }) => r),
+    zones,
   };
   writeFileSync("lib/priors.json", JSON.stringify(out, null, 1));
   console.log("\nWrote lib/priors.json");
