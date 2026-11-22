@@ -206,6 +206,19 @@ export default function SettingsView({ e, settings, update }: { e: Engine; setti
       </Card>
 
       <Card>
+        <button
+          type="button"
+          className="w-full rounded-lg bg-card2 py-2 text-[13px] text-ink2"
+          onClick={async () => {
+            await fetch("/api/logout", { method: "POST" }).catch(() => {});
+            window.location.replace("/login");
+          }}
+        >
+          Sign out
+        </button>
+      </Card>
+
+      <Card>
         <div className="space-y-1 text-[11px] text-ink3">
           <p>Read-only. No trading, no Kalshi account access. Not financial advice.</p>
           <p>Up wins if the 60-second BRTI average before close is at least the target (the previous window's average).</p>

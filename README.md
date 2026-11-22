@@ -10,7 +10,9 @@ No trading. No Kalshi account or API keys.
 
 1. In Vercel: **Add New → Project**, import this repository. Leave everything at its defaults (Next.js is detected
    automatically). If the app sits in a subfolder of a bigger repo, set **Root Directory** to that folder.
-2. Deploy. No environment variables are needed.
+2. Add an environment variable **`PASSWORD`** (Settings → Environment Variables) with the password you want, for
+   Production (and Preview if you use it). Then deploy. The app shows a sign-in page and stays signed in for a year
+   per device. If `PASSWORD` is missing in production, the app refuses to serve. Changing it signs everyone out.
 
 On iPhone: open the deployed URL in Safari → Share → **Add to Home Screen**.
 
@@ -18,7 +20,7 @@ On iPhone: open the deployed URL in Safari → Share → **Add to Home Screen**.
 
 ```bash
 npm install
-npm run dev     # http://localhost:3000
+npm run dev     # http://localhost:3000 (no password locally unless you set PASSWORD)
 npm test        # BRTI, model, fee, parsing, calibration, blend and scorecard tests
 npm run learn   # re-learn from settled windows → lib/priors.json (commit + redeploy to ship it)
 npm run build

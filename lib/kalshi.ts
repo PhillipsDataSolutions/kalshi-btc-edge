@@ -139,6 +139,10 @@ export function normalizeOrderBook(raw: Raw): OrderBook {
 export async function kalshiGet(path: string, params: Record<string, string> = {}): Promise<Raw> {
   const qs = new URLSearchParams({ path, ...params });
   const res = await fetch(`/api/kalshi?${qs}`, { cache: "no-store" });
+  if (res.status === 401 && typeof window !== "undefined") {
+    window.location.replace("/login");
+    throw new Error("Signed out");
+  }
   if (!res.ok) throw new Error(`Kalshi ${res.status}`);
   return (await res.json()) as Raw;
 }
