@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0b0d10;
+  --color-card: #14171c;
+  --color-card2: #1b1f26;
+  --color-line: #262b33;
+  --color-ink: #e8eaed;
+  --color-ink2: #a5adb8;
+  --color-ink3: #6b7380;
+  --color-up: #22c55e;
+  --color-down: #f43f5e;
+  --color-warn: #f59e0b;
+  --font-sans: ui-sans-serif, -apple-system, "SF Pro Text", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
