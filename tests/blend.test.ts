@@ -16,7 +16,7 @@ test("blend recovers known weights", () => {
     const z = 0.2 + 0.8 * logit(pm) + 0.4 * logit(pk) + 0.3 * m1;
     data.push({ ...featuresFor(pm, pk, m1, 0), y: (r() < sigmoid(z) ? 1 : 0) as 0 | 1 });
   }
-  const w = fitLogistic(data, 0.1);
+  const w = fitLogistic(data, 0.1, [0, 0, 1, 0, 0], true);
   assert.ok(Math.abs(w[1] - 0.8) < 0.15, String(w));
   assert.ok(Math.abs(w[2] - 0.4) < 0.15, String(w));
   assert.ok(Math.abs(w[3] - 0.3) < 0.1, String(w));
@@ -40,4 +40,15 @@ test("when the model is pure noise the blend falls back to Kalshi", () => {
 test("strong ridge keeps the prior", () => {
   const w = fitLogistic([{ ...featuresFor(0.9, 0.5, 0, 0), y: 1 }], 1e6, [0, 0.5, 0.5, 0, 0]);
   assert.ok(Math.abs(w[1] - 0.5) < 1e-3 && Math.abs(w[2] - 0.5) < 1e-3);
+});
+
+test("intercept is pinned to 0 by default (no trend bias)", () => {
+  const r = rng(5);
+  const data = [];
+  for (let i = 0; i < 3000; i++) {
+    const pk = 0.05 + 0.9 * r();
+    data.push({ ...featuresFor(pk, pk, 0, 0), y: (r() < sigmoid(logit(pk) - 0.4) ? 1 : 0) as 0 | 1 });
+  }
+  assert.ok(Math.abs(fitLogistic(data, 1)[0]) < 1e-6);
+  assert.ok(fitLogistic(data, 1, [0, 0, 1, 0, 0], true)[0] < -0.2);
 });

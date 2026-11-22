@@ -465,6 +465,7 @@ export function useEngine(settings: Settings) {
       signal,
       oddsHistory: odds.current.pts,
       history: hub?.history ?? [],
+      candles: hub?.candles ?? [],
       liveBlend,
       mom1,
       mom5,

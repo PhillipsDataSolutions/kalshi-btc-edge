@@ -48,8 +48,15 @@ function solve(A: number[][], b: number[]): number[] {
 /**
  * Ridge-regularised logistic regression by Newton's method.
  * `prior` is the coefficient vector the penalty shrinks toward (default: trust Kalshi, w2 = 1).
+ * The intercept is pinned to prior[0] (0) by default: a fitted intercept just learns whether BTC
+ * happened to trend up or down during the training weeks, which is not an edge and biases every call.
  */
-export function fitLogistic(data: BlendFeatures[], ridge = 1, prior: number[] = [0, 0, 1, 0, 0]): number[] {
+export function fitLogistic(
+  data: BlendFeatures[],
+  ridge = 1,
+  prior: number[] = [0, 0, 1, 0, 0],
+  fitIntercept = false,
+): number[] {
   const k = prior.length;
   let w = [...prior];
   for (let it = 0; it < 30; it++) {
@@ -68,7 +75,9 @@ export function fitLogistic(data: BlendFeatures[], ridge = 1, prior: number[] = 
       g[i] += ridge * (w[i] - prior[i]);
       H[i][i] += ridge;
     }
-    H[0][0] += 1e-6;
+    const r0 = fitIntercept ? 1e-6 : 1e9;
+    g[0] += r0 * (w[0] - prior[0]);
+    H[0][0] += r0;
     const step = solve(H, g);
     let max = 0;
     w = w.map((v, i) => {

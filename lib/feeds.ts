@@ -26,6 +26,7 @@ export class PriceHub {
   history: PricePoint[] = []; // BRTI replica, 1/second
   lead: PricePoint[] = []; // Binance mid, 1/second
   minuteCloses: number[] = []; // 1-minute closes: Coinbase candles, then live replica
+  candles: PricePoint[] = []; // Coinbase 1-minute closes stamped at minute end (chart backfill only)
   last: RtiResult | null = null;
   simpleMean: number | null = null; // plain average of best-bid/ask mids, for comparison
   leadState: LeadState = { status: "off", mid: null };
@@ -254,7 +255,9 @@ export class PriceHub {
       const rows = (await Promise.all(chunks)).flat();
       const byTime = new Map<number, number>();
       for (const r of rows) if (Array.isArray(r) && r[0] < end) byTime.set(r[0], r[4]);
-      const closes = [...byTime.entries()].sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+      const sorted = [...byTime.entries()].sort((a, b) => a[0] - b[0]);
+      const closes = sorted.map((x) => x[1]);
+      this.candles = sorted.slice(-30).map(([t, c]) => ({ t: (t + 60) * 1000, p: c }));
       this.minuteCloses = [...closes, ...this.minuteCloses].slice(-1500);
       this.listeners.forEach((fn) => fn());
     } catch {}

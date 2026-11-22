@@ -46,7 +46,16 @@ export default function Ticker({ e, entryMinute }: { e: Engine; entryMinute: num
 
   const t0 = m.openTime;
   const t1 = m.closeTime;
-  const pts = e.history.filter((p) => p.t >= t0 && p.t <= t1).map((p) => ({ t: p.t, p: p.p + e.bias }));
+  const live = e.history.filter((p) => p.t >= t0 && p.t <= t1).map((p) => ({ t: p.t, p: p.p + e.bias }));
+  // Backfill minutes before the app opened from Coinbase candles, shifted onto the replica's level.
+  const firstLive = live[0];
+  let backfill: { t: number; p: number }[] = [];
+  if (firstLive && e.candles.length) {
+    const ref = e.candles.reduce((b, c) => (Math.abs(c.t - firstLive.t) < Math.abs(b.t - firstLive.t) ? c : b), e.candles[0]);
+    const basis = firstLive.p - ref.p;
+    backfill = e.candles.filter((c) => c.t >= t0 && c.t < firstLive.t - 30_000).map((c) => ({ t: c.t, p: c.p + basis }));
+  }
+  const pts = [...backfill, ...live];
   const openPrice = pts[0]?.p ?? null;
   const change = openPrice !== null ? e.price - openPrice : null;
 
@@ -145,6 +154,16 @@ export default function Ticker({ e, entryMinute }: { e: Engine; entryMinute: num
               target
             </text>
           </>
+        ) : null}
+        {backfill.length ? (
+          <line
+            x1={x(backfill[backfill.length - 1].t)}
+            x2={x(backfill[backfill.length - 1].t)}
+            y1={0}
+            y2={H - 16}
+            stroke="var(--color-line)"
+            strokeWidth={1}
+          />
         ) : null}
         <path d={path} fill="none" stroke={above ? "var(--color-up)" : "var(--color-down)"} strokeWidth={2} strokeLinejoin="round" />
         {last ? (
