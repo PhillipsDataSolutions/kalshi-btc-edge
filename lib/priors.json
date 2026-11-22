@@ -1,431 +1,431 @@
 {
- "generatedAt": "2026-11-22T19:59:53.652Z",
- "days": 21,
- "windows": 1992,
- "samples": 26684,
+ "generatedAt": "2026-11-22T20:12:25.307Z",
+ "days": 60,
+ "windows": 5688,
+ "samples": 76826,
  "margin": 3,
  "note": "Coefficients for P(Up) = sigmoid(w · [1, logit(pModel), logit(pKalshi), mom1, mom5]) per minute into the window.",
  "coef": {
   "1": [
-   -0.11624,
-   0.27925,
-   0.69322,
-   -0.03829,
-   -0.00055
+   0,
+   0.04256,
+   1.06211,
+   -0.05465,
+   -0.02253
   ],
   "2": [
-   -0.11858,
-   0.24331,
-   0.72829,
-   0.02332,
-   -0.02755
+   0,
+   -0.10082,
+   1.14993,
+   0.04399,
+   -0.01394
   ],
   "3": [
-   -0.1165,
-   0.3419,
-   0.69231,
-   -0.02923,
-   -0.09804
+   0,
+   0.00588,
+   1.09249,
+   0.01582,
+   -0.0547
   ],
   "4": [
-   -0.12601,
-   0.43211,
-   0.60315,
-   -0.01155,
-   -0.13996
+   0,
+   0.11122,
+   0.91163,
+   -0.02869,
+   -0.00126
   ],
   "5": [
-   -0.1186,
-   0.28932,
-   0.63345,
-   0.02551,
-   0.02934
+   0,
+   0.14079,
+   0.90108,
+   -0.00488,
+   -0.04858
   ],
   "6": [
-   -0.11158,
-   0.16315,
-   0.78318,
-   0.02232,
-   0.04831
+   0,
+   0.02239,
+   0.95021,
+   0.01829,
+   0.09201
   ],
   "7": [
-   -0.14193,
-   0.32227,
-   0.65662,
-   0.03693,
-   0.04459
+   0,
+   0.11726,
+   0.88333,
+   -0.01469,
+   0.03741
   ],
   "8": [
-   -0.11211,
-   0.32209,
-   0.62968,
-   -0.05158,
-   0.13265
+   0,
+   0.13033,
+   0.90122,
+   0.04484,
+   -0.02992
   ],
   "9": [
-   -0.1239,
-   0.31046,
-   0.63161,
-   -0.001,
-   0.07485
+   0,
+   0.02394,
+   0.97702,
+   -0.03641,
+   0.02472
   ],
   "10": [
-   -0.13489,
-   0.35612,
-   0.622,
-   0.10938,
-   0.01675
+   0,
+   -0.01441,
+   1.01376,
+   0.05697,
+   -0.02323
   ],
   "11": [
-   -0.06076,
-   0.53419,
-   0.48539,
-   0.0605,
-   0.15215
+   0,
+   -0.04085,
+   1.04315,
+   0.08671,
+   0.03983
   ],
   "12": [
-   -0.03319,
-   0.40861,
-   0.60875,
-   -0.04476,
-   0.1031
+   0,
+   -0.01188,
+   0.99899,
+   0.03236,
+   0.1069
   ],
   "13": [
-   0.05338,
-   0.21053,
-   0.80947,
-   0.13819,
-   -0.00654
+   0,
+   -0.10548,
+   1.07661,
+   0.09597,
+   0.10926
   ],
   "14": [
-   0.04079,
-   0.38788,
-   0.71965,
-   -0.12822,
-   0.01368
+   0,
+   0.08914,
+   0.98113,
+   0.08517,
+   0.12371
   ]
  },
  "outOfSample": [
   {
    "minute": 1,
    "minsLeft": 14,
-   "nTrain": 1394,
-   "nTest": 598,
-   "brierModel": 0.23077979399100243,
-   "brierKalshi": 0.2318343645484947,
-   "brierBlend": 0.231311387105588,
+   "nTrain": 3981,
+   "nTest": 1707,
+   "brierModel": 0.2324917945765384,
+   "brierKalshi": 0.23203493336262404,
+   "brierBlend": 0.23246697739715508,
    "pnlModel": {
-    "trades": 99,
-    "wins": 61,
-    "pnl": 49,
-    "perTrade": 0.5,
-    "t": 0.1
+    "trades": 278,
+    "wins": 166,
+    "pnl": 193,
+    "perTrade": 0.7,
+    "t": 0.24
    },
    "pnlBlend": {
-    "trades": 4,
-    "wins": 2,
-    "pnl": -1,
-    "perTrade": -0.2,
-    "t": -0.01
+    "trades": 9,
+    "wins": 3,
+    "pnl": -50,
+    "perTrade": -5.6,
+    "t": -0.35
    }
   },
   {
    "minute": 2,
    "minsLeft": 13,
-   "nTrain": 1393,
-   "nTest": 598,
-   "brierModel": 0.22449110421099575,
-   "brierKalshi": 0.22348091137123696,
-   "brierBlend": 0.22426413346985496,
+   "nTrain": 3981,
+   "nTest": 1706,
+   "brierModel": 0.2189180743036157,
+   "brierKalshi": 0.21826678839390326,
+   "brierBlend": 0.21894219534077888,
    "pnlModel": {
-    "trades": 115,
-    "wins": 74,
-    "pnl": -109.4,
-    "perTrade": -1,
-    "t": -0.22
+    "trades": 347,
+    "wins": 222,
+    "pnl": 125.9,
+    "perTrade": 0.4,
+    "t": 0.15
    },
    "pnlBlend": {
-    "trades": 54,
-    "wins": 31,
-    "pnl": -150,
-    "perTrade": -2.8,
-    "t": -0.42
+    "trades": 8,
+    "wins": 2,
+    "pnl": -190,
+    "perTrade": -23.7,
+    "t": -1.45
    }
   },
   {
    "minute": 3,
    "minsLeft": 12,
-   "nTrain": 1394,
-   "nTest": 598,
-   "brierModel": 0.21748866201035089,
-   "brierKalshi": 0.2163728674749161,
-   "brierBlend": 0.21698079195524195,
+   "nTrain": 3980,
+   "nTest": 1707,
+   "brierModel": 0.2088770309985,
+   "brierKalshi": 0.20862238664323285,
+   "brierBlend": 0.2092483664248536,
    "pnlModel": {
-    "trades": 131,
-    "wins": 90,
-    "pnl": -64.8,
-    "perTrade": -0.5,
-    "t": -0.12
+    "trades": 385,
+    "wins": 252,
+    "pnl": -10,
+    "perTrade": 0,
+    "t": -0.01
    },
    "pnlBlend": {
-    "trades": 50,
-    "wins": 28,
-    "pnl": -234,
-    "perTrade": -4.7,
-    "t": -0.65
+    "trades": 1,
+    "wins": 0,
+    "pnl": -54,
+    "perTrade": -54,
+    "t": 0
    }
   },
   {
    "minute": 4,
    "minsLeft": 11,
-   "nTrain": 1394,
-   "nTest": 598,
-   "brierModel": 0.21249132541096663,
-   "brierKalshi": 0.2103296655518393,
-   "brierBlend": 0.2119490391457508,
+   "nTrain": 3981,
+   "nTest": 1707,
+   "brierModel": 0.1989424179314991,
+   "brierKalshi": 0.1985504919449316,
+   "brierBlend": 0.19869890409871627,
    "pnlModel": {
-    "trades": 133,
-    "wins": 91,
-    "pnl": -354.3,
-    "perTrade": -2.7,
-    "t": -0.68
+    "trades": 395,
+    "wins": 262,
+    "pnl": 658.4,
+    "perTrade": 1.7,
+    "t": 0.78
    },
    "pnlBlend": {
-    "trades": 64,
-    "wins": 34,
-    "pnl": -577.6,
-    "perTrade": -9,
-    "t": -1.47
+    "trades": 0,
+    "wins": 0,
+    "pnl": 0,
+    "perTrade": 0,
+    "t": 0
    }
   },
   {
    "minute": 5,
    "minsLeft": 10,
-   "nTrain": 1394,
-   "nTest": 597,
-   "brierModel": 0.1971141237448869,
-   "brierKalshi": 0.19773616331658259,
-   "brierBlend": 0.1986043222228326,
+   "nTrain": 3981,
+   "nTest": 1706,
+   "brierModel": 0.1880011159314724,
+   "brierKalshi": 0.18813458294255503,
+   "brierBlend": 0.1881695525735982,
    "pnlModel": {
-    "trades": 122,
-    "wins": 86,
-    "pnl": 182.4,
-    "perTrade": 1.5,
-    "t": 0.39
+    "trades": 374,
+    "wins": 246,
+    "pnl": 596.3,
+    "perTrade": 1.6,
+    "t": 0.73
    },
    "pnlBlend": {
-    "trades": 32,
-    "wins": 20,
-    "pnl": 44,
-    "perTrade": 1.4,
-    "t": 0.16
+    "trades": 0,
+    "wins": 0,
+    "pnl": 0,
+    "perTrade": 0,
+    "t": 0
    }
   },
   {
    "minute": 6,
    "minsLeft": 9,
-   "nTrain": 1394,
-   "nTest": 598,
-   "brierModel": 0.17764544130467916,
-   "brierKalshi": 0.17683635785953156,
-   "brierBlend": 0.17693641038839839,
+   "nTrain": 3981,
+   "nTest": 1707,
+   "brierModel": 0.17525125299917557,
+   "brierKalshi": 0.17451866036906744,
+   "brierBlend": 0.17456627172987133,
    "pnlModel": {
-    "trades": 119,
-    "wins": 78,
-    "pnl": -6.1,
-    "perTrade": -0.1,
-    "t": -0.01
+    "trades": 405,
+    "wins": 250,
+    "pnl": -66.1,
+    "perTrade": -0.2,
+    "t": -0.07
    },
    "pnlBlend": {
-    "trades": 8,
-    "wins": 4,
-    "pnl": 9,
-    "perTrade": 1.1,
-    "t": 0.07
+    "trades": 1,
+    "wins": 0,
+    "pnl": -62,
+    "perTrade": -62,
+    "t": 0
    }
   },
   {
    "minute": 7,
    "minsLeft": 8,
-   "nTrain": 1394,
-   "nTest": 598,
-   "brierModel": 0.1587165097055372,
-   "brierKalshi": 0.15920419230769217,
-   "brierBlend": 0.15813232648127626,
+   "nTrain": 3981,
+   "nTest": 1707,
+   "brierModel": 0.16224446714649346,
+   "brierKalshi": 0.16190363444639655,
+   "brierBlend": 0.16177514343134977,
    "pnlModel": {
-    "trades": 121,
-    "wins": 81,
-    "pnl": 676.8,
-    "perTrade": 5.6,
-    "t": 1.46
+    "trades": 393,
+    "wins": 225,
+    "pnl": 429.6,
+    "perTrade": 1.1,
+    "t": 0.52
    },
    "pnlBlend": {
-    "trades": 22,
-    "wins": 16,
-    "pnl": 416,
-    "perTrade": 18.9,
-    "t": 2.23
+    "trades": 0,
+    "wins": 0,
+    "pnl": 0,
+    "perTrade": 0,
+    "t": 0
    }
   },
   {
    "minute": 8,
    "minsLeft": 7,
-   "nTrain": 1394,
-   "nTest": 598,
-   "brierModel": 0.1442319847268188,
-   "brierKalshi": 0.14427792976588624,
-   "brierBlend": 0.1434152584966207,
+   "nTrain": 3981,
+   "nTest": 1707,
+   "brierModel": 0.1509386386748555,
+   "brierKalshi": 0.1500083567662555,
+   "brierBlend": 0.15050310289630295,
    "pnlModel": {
-    "trades": 114,
-    "wins": 70,
-    "pnl": 411.8,
-    "perTrade": 3.6,
-    "t": 0.98
+    "trades": 398,
+    "wins": 204,
+    "pnl": -236.8,
+    "perTrade": -0.6,
+    "t": -0.29
    },
    "pnlBlend": {
-    "trades": 8,
-    "wins": 4,
-    "pnl": 5,
-    "perTrade": 0.6,
-    "t": 0.05
+    "trades": 12,
+    "wins": 6,
+    "pnl": -160,
+    "perTrade": -13.3,
+    "t": -1.07
    }
   },
   {
    "minute": 9,
    "minsLeft": 6,
-   "nTrain": 1394,
-   "nTest": 598,
-   "brierModel": 0.1318568578598105,
-   "brierKalshi": 0.13134942934782617,
-   "brierBlend": 0.13109129238826908,
+   "nTrain": 3981,
+   "nTest": 1707,
+   "brierModel": 0.13732238618739695,
+   "brierKalshi": 0.13695740231400047,
+   "brierBlend": 0.13764814833355815,
    "pnlModel": {
-    "trades": 111,
-    "wins": 52,
-    "pnl": -223.8,
-    "perTrade": -2,
-    "t": -0.52
+    "trades": 390,
+    "wins": 187,
+    "pnl": 895.9,
+    "perTrade": 2.3,
+    "t": 1.09
    },
    "pnlBlend": {
-    "trades": 25,
-    "wins": 9,
-    "pnl": 29.6,
-    "perTrade": 1.2,
-    "t": 0.13
+    "trades": 9,
+    "wins": 4,
+    "pnl": -13,
+    "perTrade": -1.4,
+    "t": -0.07
    }
   },
   {
    "minute": 10,
    "minsLeft": 5,
-   "nTrain": 1394,
-   "nTest": 598,
-   "brierModel": 0.12498925081339496,
-   "brierKalshi": 0.12402814632107013,
-   "brierBlend": 0.12496224680733097,
+   "nTrain": 3981,
+   "nTest": 1707,
+   "brierModel": 0.1240535802707116,
+   "brierKalshi": 0.12288053690685358,
+   "brierBlend": 0.123157814759677,
    "pnlModel": {
-    "trades": 110,
-    "wins": 48,
-    "pnl": -296.9,
-    "perTrade": -2.7,
-    "t": -0.75
+    "trades": 380,
+    "wins": 160,
+    "pnl": 439.3,
+    "perTrade": 1.2,
+    "t": 0.58
    },
    "pnlBlend": {
-    "trades": 58,
-    "wins": 30,
-    "pnl": 314.2,
-    "perTrade": 5.4,
-    "t": 0.81
+    "trades": 9,
+    "wins": 3,
+    "pnl": -102,
+    "perTrade": -11.3,
+    "t": -0.89
    }
   },
   {
    "minute": 11,
    "minsLeft": 4,
-   "nTrain": 1390,
-   "nTest": 598,
-   "brierModel": 0.1045619395756776,
-   "brierKalshi": 0.10558909406354525,
-   "brierBlend": 0.10436388768784904,
+   "nTrain": 3978,
+   "nTest": 1705,
+   "brierModel": 0.10649532277851453,
+   "brierKalshi": 0.1070663265395891,
+   "brierBlend": 0.10834377388844285,
    "pnlModel": {
-    "trades": 126,
-    "wins": 50,
-    "pnl": 126,
-    "perTrade": 1,
-    "t": 0.27
+    "trades": 400,
+    "wins": 158,
+    "pnl": 1398.3,
+    "perTrade": 3.5,
+    "t": 1.71
    },
    "pnlBlend": {
-    "trades": 69,
-    "wins": 48,
-    "pnl": 760.4,
-    "perTrade": 11,
-    "t": 1.86
+    "trades": 53,
+    "wins": 23,
+    "pnl": -384.7,
+    "perTrade": -7.3,
+    "t": -1.22
    }
   },
   {
    "minute": 12,
    "minsLeft": 3,
-   "nTrain": 1369,
-   "nTest": 584,
-   "brierModel": 0.09048899915059531,
-   "brierKalshi": 0.08926426070205487,
-   "brierBlend": 0.08958882500858609,
+   "nTrain": 3961,
+   "nTest": 1677,
+   "brierModel": 0.09059784406127977,
+   "brierKalshi": 0.08921732498509218,
+   "brierBlend": 0.09024898411129181,
    "pnlModel": {
-    "trades": 135,
-    "wins": 46,
-    "pnl": -198.1,
-    "perTrade": -1.5,
-    "t": -0.42
+    "trades": 423,
+    "wins": 145,
+    "pnl": 251.4,
+    "perTrade": 0.6,
+    "t": 0.31
    },
    "pnlBlend": {
-    "trades": 36,
-    "wins": 19,
-    "pnl": 66.2,
-    "perTrade": 1.8,
-    "t": 0.21
+    "trades": 43,
+    "wins": 15,
+    "pnl": -543.1,
+    "perTrade": -12.6,
+    "t": -1.9
    }
   },
   {
    "minute": 13,
    "minsLeft": 2,
-   "nTrain": 1235,
-   "nTest": 519,
-   "brierModel": 0.07742970865691869,
-   "brierKalshi": 0.07573647736030831,
-   "brierBlend": 0.07735836603572607,
+   "nTrain": 3702,
+   "nTest": 1512,
+   "brierModel": 0.0759920188572947,
+   "brierKalshi": 0.07368606646825376,
+   "brierBlend": 0.07503157099658345,
    "pnlModel": {
-    "trades": 140,
-    "wins": 48,
-    "pnl": 22.1,
-    "perTrade": 0.2,
-    "t": 0.05
+    "trades": 400,
+    "wins": 128,
+    "pnl": 401.4,
+    "perTrade": 1,
+    "t": 0.52
    },
    "pnlBlend": {
-    "trades": 44,
-    "wins": 21,
-    "pnl": -189,
-    "perTrade": -4.3,
-    "t": -0.61
+    "trades": 80,
+    "wins": 29,
+    "pnl": -538.7,
+    "perTrade": -6.7,
+    "t": -1.45
    }
   },
   {
    "minute": 14,
    "minsLeft": 1,
-   "nTrain": 748,
-   "nTest": 323,
-   "brierModel": 0.06640768825525711,
-   "brierKalshi": 0.06308775619195041,
-   "brierBlend": 0.06442498958483447,
+   "nTrain": 2493,
+   "nTest": 921,
+   "brierModel": 0.06686238451554428,
+   "brierKalshi": 0.06291515363735078,
+   "brierBlend": 0.06580877242705026,
    "pnlModel": {
-    "trades": 100,
-    "wins": 39,
-    "pnl": 518.6,
-    "perTrade": 5.2,
-    "t": 1.4
+    "trades": 292,
+    "wins": 107,
+    "pnl": 1072.9,
+    "perTrade": 3.7,
+    "t": 1.69
    },
    "pnlBlend": {
-    "trades": 50,
-    "wins": 25,
-    "pnl": 63.6,
-    "perTrade": 1.3,
-    "t": 0.22
+    "trades": 79,
+    "wins": 38,
+    "pnl": -885.8,
+    "perTrade": -11.2,
+    "t": -2.51
    }
   }
  ],
@@ -434,133 +434,133 @@
    "center": 2,
    "from": 1,
    "to": 3,
-   "testWindows": 598,
-   "trades": 81,
-   "wins": 46,
-   "pnl": -314,
-   "perTrade": -3.9,
-   "t": -0.71
+   "testWindows": 1707,
+   "trades": 13,
+   "wins": 4,
+   "pnl": -190,
+   "perTrade": -14.6,
+   "t": -1.08
   },
   {
    "center": 3,
    "from": 2,
    "to": 4,
-   "testWindows": 598,
-   "trades": 119,
-   "wins": 67,
-   "pnl": -550,
-   "perTrade": -4.6,
-   "t": -1.02
+   "testWindows": 1707,
+   "trades": 8,
+   "wins": 2,
+   "pnl": -190,
+   "perTrade": -23.7,
+   "t": -1.45
   },
   {
    "center": 4,
    "from": 3,
    "to": 5,
-   "testWindows": 598,
-   "trades": 106,
-   "wins": 59,
-   "pnl": -563.6,
-   "perTrade": -5.3,
-   "t": -1.1
+   "testWindows": 1707,
+   "trades": 1,
+   "wins": 0,
+   "pnl": -54,
+   "perTrade": -54,
+   "t": 0
   },
   {
    "center": 5,
    "from": 4,
    "to": 6,
-   "testWindows": 598,
-   "trades": 80,
-   "wins": 42,
-   "pnl": -666.6,
-   "perTrade": -8.3,
-   "t": -1.51
+   "testWindows": 1707,
+   "trades": 1,
+   "wins": 0,
+   "pnl": -62,
+   "perTrade": -62,
+   "t": 0
   },
   {
    "center": 6,
    "from": 5,
    "to": 7,
-   "testWindows": 598,
-   "trades": 55,
-   "wins": 35,
-   "pnl": 404,
-   "perTrade": 7.3,
-   "t": 1.19
+   "testWindows": 1707,
+   "trades": 1,
+   "wins": 0,
+   "pnl": -62,
+   "perTrade": -62,
+   "t": 0
   },
   {
    "center": 7,
    "from": 6,
    "to": 8,
-   "testWindows": 598,
-   "trades": 34,
-   "wins": 20,
-   "pnl": 313,
-   "perTrade": 9.2,
-   "t": 1.28
+   "testWindows": 1707,
+   "trades": 13,
+   "wins": 6,
+   "pnl": -222,
+   "perTrade": -17.1,
+   "t": -1.41
   },
   {
    "center": 8,
    "from": 7,
    "to": 9,
-   "testWindows": 598,
-   "trades": 45,
-   "wins": 22,
-   "pnl": 308.6,
-   "perTrade": 6.9,
-   "t": 1.06
+   "testWindows": 1707,
+   "trades": 19,
+   "wins": 9,
+   "pnl": -209,
+   "perTrade": -11,
+   "t": -0.97
   },
   {
    "center": 9,
    "from": 8,
    "to": 10,
-   "testWindows": 598,
-   "trades": 78,
-   "wins": 36,
-   "pnl": 318.3,
-   "perTrade": 4.1,
-   "t": 0.76
+   "testWindows": 1707,
+   "trades": 25,
+   "wins": 11,
+   "pnl": -266,
+   "perTrade": -10.6,
+   "t": -1.13
   },
   {
    "center": 10,
    "from": 9,
    "to": 11,
-   "testWindows": 598,
-   "trades": 124,
-   "wins": 68,
-   "pnl": 673.9,
-   "perTrade": 5.4,
-   "t": 1.25
+   "testWindows": 1707,
+   "trades": 59,
+   "wins": 26,
+   "pnl": -404,
+   "perTrade": -6.8,
+   "t": -1.14
   },
   {
    "center": 11,
    "from": 10,
    "to": 12,
-   "testWindows": 598,
-   "trades": 117,
-   "wins": 70,
-   "pnl": 858.8,
-   "perTrade": 7.3,
-   "t": 1.59
+   "testWindows": 1707,
+   "trades": 81,
+   "wins": 32,
+   "pnl": -693.8,
+   "perTrade": -8.6,
+   "t": -1.74
   },
   {
    "center": 12,
    "from": 11,
    "to": 13,
-   "testWindows": 598,
-   "trades": 103,
-   "wins": 60,
-   "pnl": 252.4,
-   "perTrade": 2.5,
-   "t": 0.49
+   "testWindows": 1707,
+   "trades": 135,
+   "wins": 55,
+   "pnl": -756.1,
+   "perTrade": -5.6,
+   "t": -1.52
   },
   {
    "center": 13,
    "from": 12,
    "to": 14,
-   "testWindows": 598,
-   "trades": 95,
-   "wins": 47,
-   "pnl": -121.4,
-   "perTrade": -1.3,
-   "t": -0.26
+   "testWindows": 1707,
+   "trades": 164,
+   "wins": 68,
+   "pnl": -1543.5,
+   "perTrade": -9.4,
+   "t": -2.84
   }
  ]
 }
