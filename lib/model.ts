@@ -47,25 +47,49 @@ export interface ModelInputs {
   volPerMin: number;
   minsLeft: number;
   calib: number;
+  /** BRTI seconds already observed inside the 60s settlement window (sum and count). */
+  obsSum?: number;
+  obsCount?: number;
 }
 
 export interface ModelOutput {
   pUp: number; // 0..1, before per-bucket shrink
+  center: number; // expected settlement average (= price before the final minute)
   spread: number; // log-space σ to settlement
   tEff: number;
   lnr: number; // ln(price/target)
   z: number;
 }
 
-export function modelProbUp({ price, target, volPerMin, minsLeft, calib }: ModelInputs): ModelOutput {
-  const lnr = Math.log(price / target);
-  if (minsLeft <= 0) {
-    return { pUp: price >= target ? 1 : 0, spread: 0, tEff: 0, lnr, z: lnr >= 0 ? Infinity : -Infinity };
+/**
+ * Inside the final minute part of the settlement average is already known. With n of the 60
+ * one-second BRTI values observed (sum S) and k = 60 − n still to come, the settlement average is
+ * (S + k·price)/60 plus noise whose variance is σ²·(k/60)³/3 — the exact continuation of the
+ * tEff = m − 2/3 formula (the two agree at m = 1). If observations are missing (app opened mid-
+ * window) it falls back to the indicator's tEff = max(m − 2/3, m/3) on the live price.
+ */
+export function settlementTerms(minsLeft: number, price: number, obsSum = 0, obsCount = 0) {
+  if (minsLeft < 1 && obsCount > 0) {
+    const secsLeft = Math.max(0, minsLeft * 60);
+    const k = Math.max(0, 60 - obsCount);
+    // Only trust the observed sum if we have (almost) every second elapsed so far.
+    if (Math.abs(k - Math.ceil(secsLeft)) <= 3) {
+      const m = k / 60;
+      return { center: (obsSum + k * price) / 60, tEff: (m * m * m) / 3 };
+    }
   }
-  const tEff = effectiveMinutes(minsLeft);
+  return { center: price, tEff: effectiveMinutes(minsLeft) };
+}
+
+export function modelProbUp({ price, target, volPerMin, minsLeft, calib, obsSum, obsCount }: ModelInputs): ModelOutput {
+  const { center, tEff } = settlementTerms(minsLeft, price, obsSum, obsCount);
+  const lnr = Math.log(center / target);
+  if (minsLeft <= 0 || tEff <= 0) {
+    return { pUp: center >= target ? 1 : 0, center, spread: 0, tEff: 0, lnr, z: lnr >= 0 ? Infinity : -Infinity };
+  }
   const spread = Math.max(1e-9, volPerMin * Math.sqrt(tEff) * calib);
   const z = lnr / spread;
-  return { pUp: clamp01(F(z)), spread, tEff, lnr, z };
+  return { pUp: clamp01(F(z)), center, spread, tEff, lnr, z };
 }
 
 export function clamp01(p: number) {

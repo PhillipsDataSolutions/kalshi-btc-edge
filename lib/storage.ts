@@ -40,9 +40,18 @@ export interface Settings {
   contracts: number; // for fee rounding
   lead: boolean; // Binance lead feed
   showBook: boolean;
+  lite: boolean; // light price engine (top-of-book feeds) to save mobile data
+  biasCorrect: boolean; // shift the replica by its measured offset vs official settlements
 }
 
-export const DEFAULT_SETTINGS: Settings = { margin: 3, contracts: 1, lead: true, showBook: true };
+export const DEFAULT_SETTINGS: Settings = {
+  margin: 3,
+  contracts: 1,
+  lead: true,
+  showBook: true,
+  lite: false,
+  biasCorrect: true,
+};
 
 export interface Position {
   ticker: string;

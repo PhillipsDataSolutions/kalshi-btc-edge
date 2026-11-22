@@ -72,6 +72,24 @@ export default function SettingsView({ e, settings, update }: { e: Engine; setti
         </div>
         <div className="flex items-center justify-between">
           <div>
+            <div className="text-[15px]">Light price mode</div>
+            <div className="text-[12px] text-ink3">
+              Top-of-book feeds to save mobile data. Less exact than the full order-book BRTI replica.
+            </div>
+          </div>
+          <Toggle on={settings.lite} onChange={(v) => update({ lite: v })} />
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[15px]">Auto-correct price offset</div>
+            <div className="text-[12px] text-ink3">
+              After 5 settled windows, shift the replica by its median miss vs Kalshi&apos;s official settlement values
+            </div>
+          </div>
+          <Toggle on={settings.biasCorrect} onChange={(v) => update({ biasCorrect: v })} />
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
             <div className="text-[15px]">Binance lead feed</div>
             <div className="text-[12px] text-ink3">Momentum only. Often blocked in the US.</div>
           </div>
@@ -96,14 +114,16 @@ export default function SettingsView({ e, settings, update }: { e: Engine; setti
               </span>
               <span className="text-ink2">
                 {usd(f.mid)} · {f.status}
-                {f.ageMs !== null && f.status !== "off" ? ` · ${(f.ageMs / 1000).toFixed(0)}s` : ""}
+                {f.levels ? ` · ${f.levels} lvls` : ""}
               </span>
             </div>
           ))}
         </div>
         <div className="mt-2 text-[11px] text-ink3">
-          Composite = mean of live Coinbase, Kraken, Bitstamp and Gemini mids (a feed older than 10s or more than 0.3% from the median is
-          skipped). It approximates CF Benchmarks' BRTI, which settles the market, but it is not BRTI.
+          Price = a replica of CF Benchmarks&apos; BRTI (methodology v17.0). The order books of all seven constituent exchanges are merged,
+          size-capped and uncrossed, then the mid price-volume curve is exponentially weighted up to the 0.5% utilized depth. Books
+          older than 10s, crossed, or more than 5% from the median are dropped. Data received this session:{" "}
+          {(e.bandwidth / 1e6).toFixed(0)} MB (before compression).
         </div>
       </Card>
 

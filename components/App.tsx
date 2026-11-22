@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { DEFAULT_POSITION, DEFAULT_SETTINGS, usePersisted } from "@/lib/storage";
 import { useEngine } from "@/lib/useEngine";
 import Header, { FeedDots } from "./Header";
+import Accuracy from "./Accuracy";
 import Hero from "./Hero";
 import Histogram from "./Histogram";
 import { CashOut, Depth, Stats } from "./LiveExtras";
@@ -45,6 +46,7 @@ export default function App() {
             <Stats e={e} />
             <CashOut e={e} pos={pos} setPos={setPos} margin={settings.margin} />
             {settings.showBook ? <Depth e={e} /> : null}
+            <Accuracy e={e} />
           </>
         ) : tab === "score" ? (
           <Scorecard e={e} margin={settings.margin} contracts={settings.contracts} />

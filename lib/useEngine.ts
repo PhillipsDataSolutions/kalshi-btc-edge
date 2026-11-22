@@ -9,6 +9,24 @@ import { Market, OrderBook, fetchMarket, fetchOpenMarkets, fetchOrderBook, pickC
 import { blendedVolPerMin, isFastMove, modelProbUp } from "./model";
 import { gradeLogs } from "./scorecard";
 import { Settings, readLS, writeLS } from "./storage";
+import {
+  SETTLE_FIRST_OFFSET_S,
+  SETTLE_LAST_OFFSET_S,
+  TrackEntry,
+  loadTrack,
+  saveTrack,
+  trackStats,
+} from "./tracking";
+
+export interface FeedView {
+  id: string;
+  label: string;
+  status: string;
+  mid: number | null;
+  ageMs: number | null;
+  inComposite: boolean;
+  levels: number;
+}
 
 export type Verdict = "cheap" | "overpriced" | "fair" | "na";
 
@@ -37,15 +55,21 @@ export function useEngine(settings: Settings) {
   const [gradedVersion, setGradedVersion] = useState(0);
   const [logCount, setLogCount] = useState(0);
   const lastLog = useRef(0);
+  const [marketAt, setMarketAt] = useState(0);
+  const [track, setTrack] = useState<TrackEntry[]>([]);
+  const trackRef = useRef<TrackEntry[]>([]);
+  const seenWindows = useRef(new Map<string, number>()); // ticker -> closeTime
   const latest = useRef<{ entry: Parameters<typeof addLog>[0] | null }>({ entry: null });
 
   // Price feeds
   useEffect(() => {
-    const hub = new PriceHub(settings.lead);
+    const hub = new PriceHub({ lite: settings.lite, lead: settings.lead });
     hubRef.current = hub;
     const unsub = hub.subscribe(() => setTick((t) => t + 1));
     hub.start();
     setCalib(readLS(CALIB_KEY, DEFAULT_CALIB));
+    trackRef.current = loadTrack();
+    setTrack(trackRef.current);
     return () => {
       unsub();
       hub.stop();
@@ -57,6 +81,10 @@ export function useEngine(settings: Settings) {
     hubRef.current?.setLeadEnabled(settings.lead);
   }, [settings.lead]);
 
+  useEffect(() => {
+    hubRef.current?.setLite(settings.lite);
+  }, [settings.lite]);
+
   // Kalshi market polling
   useEffect(() => {
     let alive = true;
@@ -65,14 +93,17 @@ export function useEngine(settings: Settings) {
       try {
         const markets = await fetchOpenMarkets();
         if (!alive) return;
-        setMarket(pickCurrent(markets));
+        const cur = pickCurrent(markets);
+        setMarket(cur);
+        setMarketAt(Date.now());
         setMarketErr(null);
+        if (cur) seenWindows.current.set(cur.ticker, cur.closeTime);
       } catch (e) {
         if (alive) setMarketErr(e instanceof Error ? e.message : "Kalshi unavailable");
       }
     };
     void poll();
-    const id = setInterval(poll, 2000);
+    const id = setInterval(poll, 1000);
     const onVis = () => document.visibilityState === "visible" && void poll();
     document.addEventListener("visibilitychange", onVis);
     return () => {
@@ -112,7 +143,12 @@ export function useEngine(settings: Settings) {
       setLogCount(logs.length);
       const have = new Set(results.map((r) => r.ticker));
       const now = Date.now();
-      const pending = [...new Set(logs.filter((l) => l.closeTime < now && !have.has(l.ticker)).map((l) => l.ticker))].slice(0, 6);
+      const trackPending = trackRef.current.filter((e) => e.official === null && e.closeTime < now).map((e) => e.ticker);
+      const pending = [
+        ...new Set([...trackPending, ...logs.filter((l) => l.closeTime < now && !have.has(l.ticker)).map((l) => l.ticker)]),
+      ]
+        .filter((t) => !have.has(t))
+        .slice(0, 8);
       let added = 0;
       for (const t of pending) {
         try {
@@ -131,6 +167,21 @@ export function useEngine(settings: Settings) {
         } catch {}
       }
       const finalResults = added ? await allResults() : results;
+      // Fill in official settlement values for the price-accuracy tracker.
+      const official = new Map(finalResults.map((r) => [r.ticker, r.settle]));
+      let changed = false;
+      for (const e of trackRef.current) {
+        const v = official.get(e.ticker);
+        if (e.official === null && typeof v === "number" && v > 0) {
+          e.official = v;
+          changed = true;
+        }
+      }
+      if (changed) {
+        trackRef.current = [...trackRef.current];
+        saveTrack(trackRef.current);
+        setTrack(trackRef.current);
+      }
       const graded = gradeLogs(logs, finalResults);
       const state = computeCalibration(
         graded
@@ -152,19 +203,33 @@ export function useEngine(settings: Settings) {
   // ---- derived values (recomputed every second) ----
   const hub = hubRef.current;
   const now = Date.now();
-  const price = hub?.history.length ? hub.history[hub.history.length - 1].p : null;
+  const tstats = trackStats(track);
+  const bias = settings.biasCorrect && tstats.biasActive ? tstats.bias : 0;
+  const rawPrice = hub?.history.length ? hub.history[hub.history.length - 1].p : null;
+  const price = rawPrice !== null ? rawPrice + bias : null;
   const volPerMin = hub ? blendedVolPerMin(hub.minuteCloses) : null;
   const target = market?.target ?? null;
   const minsLeft = market ? Math.max(0, (market.closeTime - now) / 60000) : null;
   const windowMins = market ? (market.closeTime - market.openTime) / 60000 : 15;
 
+  // Settlement window: the 60 one-second BRTI values before close.
+  const settle = (() => {
+    if (!market || !hub) return null;
+    const from = market.closeTime + SETTLE_FIRST_OFFSET_S * 1000;
+    const to = market.closeTime + SETTLE_LAST_OFFSET_S * 1000;
+    if (now < from - 1000) return null;
+    const pts = hub.between(from, to);
+    const sum = pts.reduce((a, p) => a + p.p + bias, 0);
+    return { count: pts.length, sum, avg: pts.length ? sum / pts.length : null };
+  })();
+
   const model =
     price && target && volPerMin && minsLeft !== null
-      ? modelProbUp({ price, target, volPerMin, minsLeft, calib: calib.calib })
+      ? modelProbUp({ price, target, volPerMin, minsLeft, calib: calib.calib, obsSum: settle?.sum, obsCount: settle?.count })
       : null;
   const pUp = model && minsLeft !== null ? correctedP(model.pUp, minsLeft, calib) : null;
   const price60 = hub?.priceAgo(60) ?? null;
-  const fast = price ? isFastMove(price, price60, volPerMin) : false;
+  const fast = rawPrice ? isFastMove(rawPrice, price60, volPerMin) : false;
 
   const sideView = (side: "up" | "down"): SideView => {
     const fair = pUp === null ? null : (side === "up" ? pUp : 1 - pUp) * 100;
@@ -237,7 +302,44 @@ export function useEngine(settings: Settings) {
     return () => clearInterval(id);
   }, []);
 
-  const feeds = hub?.snapshots() ?? [];
+  const used = new Set(hub?.last?.used ?? []);
+  const feeds: FeedView[] = (hub?.feedStates() ?? []).map((f) => ({
+    id: f.id,
+    label: f.label,
+    status: f.status,
+    mid: f.bestBid !== null && f.bestAsk !== null ? (f.bestBid + f.bestAsk) / 2 : null,
+    ageMs: f.ageMs,
+    inComposite: used.has(f.id),
+    levels: f.levels,
+  }));
+  if (hub && settings.lead) {
+    feeds.push({
+      id: "binance",
+      label: "Binance perp",
+      status: hub.leadState.status,
+      mid: hub.leadState.mid,
+      ageMs: null,
+      inComposite: false,
+      levels: 0,
+    });
+  }
+
+  // Record our replica's settlement average for every window we watched through its close.
+  useEffect(() => {
+    const h = hubRef.current;
+    if (!h) return;
+    for (const [ticker, close] of seenWindows.current) {
+      if (Date.now() < close + 3000) continue;
+      seenWindows.current.delete(ticker);
+      if (trackRef.current.some((e) => e.ticker === ticker)) continue;
+      const pts = h.between(close + SETTLE_FIRST_OFFSET_S * 1000, close + SETTLE_LAST_OFFSET_S * 1000);
+      if (pts.length < 55) continue;
+      const entry: TrackEntry = { ticker, closeTime: close, ours: pts.reduce((a, p) => a + p.p, 0) / pts.length, n: pts.length, official: null };
+      trackRef.current = [...trackRef.current, entry];
+      saveTrack(trackRef.current);
+      setTrack(trackRef.current);
+    }
+  });
 
   return {
       now,
@@ -261,6 +363,14 @@ export function useEngine(settings: Settings) {
       logCount,
       grade,
       minuteCount: hub?.minuteCloses.length ?? 0,
+      rawPrice,
+      bias,
+      tstats,
+      rti: hub?.last ?? null,
+      simpleMean: hub?.simpleMean ?? null,
+      settle,
+      marketAgeMs: marketAt ? now - marketAt : null,
+      bandwidth: hub?.bandwidth() ?? 0,
   };
 }
 

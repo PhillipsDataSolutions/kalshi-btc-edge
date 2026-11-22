@@ -49,7 +49,9 @@ export default function Histogram({ e }: { e: Engine }) {
       </Card>
     );
   }
-  const bins = buildBins(e.price!, e.target!, e.model!.spread);
+  const center = e.model!.center;
+  const finalMinute = e.minsLeft !== null && e.minsLeft < 1 && center !== e.price;
+  const bins = buildBins(center, e.target!, e.model!.spread);
   const max = Math.max(...bins.map((b) => b.mass), 1e-9);
   const dp = e.price! > 1000 ? 0 : 2;
   const selected = sel !== null ? bins[sel] : null;
@@ -105,7 +107,7 @@ export default function Histogram({ e }: { e: Engine }) {
       <div className="tnum mt-2 min-h-[18px] text-[12px] text-ink2">
         {selected
           ? `${usd(selected.lo, dp)} – ${usd(selected.hi, dp)}: ${pct(selected.mass, 1)} chance`
-          : `◀ = live price. Bars ≈ ⅓σ wide; σ to close ≈ ${usd(e.price! * e.model!.spread, 0)}.`}
+          : `◀ = ${finalMinute ? "expected settlement average" : "live price"}. Bars ≈ ⅓σ wide; σ to close ≈ ${usd(center * e.model!.spread, 0)}.`}
       </div>
     </Card>
   );
